@@ -8,10 +8,12 @@
 */
 
 //INCLUIMOS LAS LIBRERIAS NECESARIAS
-
+#include <SPI.h>    //Iniciamos el Bus SPI
+#include <MFRC522.h>    // Iniciamos  el MFRC522
 #include <Password.h>   //Incluimos la libreria de Password
 #include <Keypad.h>   //Incluimos la libreria  del Keypad
 #include <LiquidCrystal.h>    //Incluimos la libreria del display
+
 
 
 // Definimos los pines necesarios
@@ -28,9 +30,12 @@ int tiempoespera = 10000;    //tiempo de espera para desactivar la alarma
 
 #define ledverde 13   //led verde para indicar alarma sin movimiento
 #define ledrojo 11   //led rojo para indicar alarma detecta movimiento
-#define buzzer 8    //buzzer para el sonido del teclado
-#define piro 9    //sensor PIR
 #define sensor 10   //sensor/es de apertura
+#define piro 9    //sensor PIR
+#define buzzer 8    //buzzer para el sonido del teclado
+#define RST_PIN  7    //Pin 9 para el reset del RC522 //pin 7 para  arduimo mega
+#define SS_PIN  6   //Pin 10 para el SS (SDA) del RC522 //pin 6 para  arduimo mega
+MFRC522 mfrc522(SS_PIN, RST_PIN); ///Creamos el objeto para el RC522
 
 
 // definimos los pines del display
@@ -60,7 +65,7 @@ char keys[ROWS][COLS] = {
 
 byte rowPins[ROWS] = {22, 24, 26, 28};// Conectar los keypads ROW1, ROW2, ROW3 y ROW4 a esos Pines de Arduino.
 byte colPins[COLS] = {30, 32, 34, 36};// Conectar los keypads COL1, COL2, COL3 y COL4 a esos Pines de Arduino.
- 
+
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
 
@@ -70,13 +75,12 @@ Password password = Password("12AB");
 
 void setup() {
 
+  SPI.begin();        //Iniciamos el Bus SPI
+  mfrc522.PCD_Init(); // Iniciamos el MFRC522
+  Serial.begin(9600); //incializamos el puerto serial en 9600 baudios
 
-    Serial.begin(9600); //incializamos el puerto serial en 9600 baudios
-
-
-    //añadimos una instrucción para acceder a una serie de eventos
-   keypad.addEventListener(keypadEvent);  
-   
+  //añadimos una instrucción para acceder a una serie de eventos
+  keypad.addEventListener(keypadEvent);  
 
     //configuramos los pines para que sean de salida o de entrada
 
@@ -87,7 +91,6 @@ void setup() {
     pinMode(buzzer, OUTPUT);    //inicializamos el pin del buzzer como una salida
     pinMode(sirenaPin, OUTPUT);   //inicializamos el pin de la sirena como una salida
 
-
     //LCD
     
     lcd.begin(16, 2);   //inicializamos el display con el numero de filas y columnas
@@ -97,8 +100,8 @@ void setup() {
     //configuracion de los pines necesarios
     
     //digitalWrite(sirenaPin, LOW);   //apagamos la sirena
-    //digitalWrite(ledrojo, LOW);   //apagamos el led rojo
-    //digitalWrite(ledverde, LOW);   //apagamos el led verde  
+    digitalWrite(ledrojo, HIGH);   //Encendemos el led rojo
+    digitalWrite(ledverde, HIGH);   //Encendemos el led verde  
 
 
     //Calibracion del sensor PIR
@@ -110,14 +113,13 @@ void setup() {
     
     for(int i = 0; i <= ct; i++)    //inicializamos un ciclo para que el sensor pueda calibrarse
     {
-       
+
       Serial.print(((i*100)/ct));   //escribimos por el monior serie
       Serial.print("% ");   //escribimos por el monior serie
       Serial.println("COMPLETADO.....");   //escribimos por el monior serie
       delay(1000);   //dejamos un tiempo de espera
       
-      }
-      
+    }
 
     Serial.println("Calibracion Completada Satisfactoriamente.");   //escribimos por el monior serie
     Serial.println("** SENSORES ACTIVOS **");   //escribimos por el monior serie
@@ -128,71 +130,71 @@ void setup() {
     lcd.print("  *Bienvenido*");    //escribimos el mensaje en el display
     lcd.setCursor(0,1);    //configuramos la fila y la columna donde empiece a escribir
     lcd.print("Ingrese la Clave");    //escribimos el mensaje en el display
-     
+    
     delay(50);   //dejamos un tiempo de espera
+    
+  }
 
-     
-}
-
+byte ActualUID[4]; //almacenará el código del Tag leído
+byte Alumno[4]= {0xA7, 0x29, 0xD7, 0x2B} ; //código del usuario 1
+byte Docente[4]= {0xC1, 0x2F, 0xD6, 0x0E} ; //código del usuario 2
 
 void loop() {
-    
   
-   keypad.getKey();
+  keypad.getKey();
+
+  LeoTarjeta();  //llamo a la funcion para que compare mis tarjetas
+
+   if (estadoanterior == 1){    //si activan la alarma...
 
 
-   if (estadoanterior==1){    //si activan la alarma...
-
-    
     //delay(100000);    //se le da un minuto a la persona para cerrar la puerta
 
     // Lee y guarda el estado del sensor de apertura en la varibale Estadodesensor
     Estadodesensor = digitalRead(sensor);
-      
+    
     //lee y guarda el estado del sensor PIR en la variable valor
     valor = digitalRead(piro);
-      
-      
+    
+    
     if (valor == 1 or Estadodesensor == 1){   //si el sensor PIR o el sensor de apertura fueron activados...
+
 
       //
       //delay(10000);    //se le da un minuto a la persona para ingresar la clave
       digitalWrite(sirenaPin, HIGH);    //Se prende la Sirena!!!!!!!!!!!!!!!
       digitalWrite(ledverde, LOW);    //se apaga el led verde        
       digitalWrite(ledrojo, HIGH);    //se enciende el led rojo que indica advertencia
-  
+      
       // Sensor de apertura y PIR
       if (Estadodesensor == 1)    //si el sensor de apertura fue abierto...
 
-      
+
       {
-        //
         //digitalWrite(ledverde, LOW);
         //digitalWrite(ledverde, HIGH);
         //digitalWrite(ledrojo, HIGH);
 
         Serial.println(" fue activado el sensor de apertura ");   //escribimos por el monior serie
+        delay(100);
         digitalWrite(buzzer, HIGH);
 
         while(tiempoespera>0 and tiempoespera<1){
 
-             keypad.getKey();
-          tiempoespera = tiempoespera - 1;
+         keypad.getKey();
+         tiempoespera = tiempoespera - 1;
 
-          
-          }
+         
+       }
+       
 
-          Serial.println("Sali del ciclo");
-
-          
-
-        
+       
        }   //final de if (Estadodesensor == 1)...
-        
+       
         else    //si no se activo el sensor de apertura
-        
+
         {
-                    digitalWrite(buzzer, LOW);  
+          digitalWrite(buzzer, LOW);  
 
           
           //
@@ -201,10 +203,10 @@ void loop() {
             //
             //digitalWrite(ledverde, LOW);
             //digitalWrite(ledrojo, HIGH);
-            
+
             Serial.println("Se activo el sensor PIR ");   //escribimos por el monior serie
             Serial.println(valor);
-                        
+            
           }    //final if( valor == HIGH )...
 
 
@@ -217,41 +219,49 @@ void loop() {
       
     }   //final if (estadoanterior==1)......
     
-      
+    
     else{   //si ponen la contraseña devuelta quieren desactivarla
 
       //
-      digitalWrite(ledverde, HIGH);   //se enciende el led verde
-      digitalWrite(ledrojo, LOW);    //se apaga el led rojo que indica advertencia
+      //digitalWrite(ledverde, HIGH);   //se enciende el led verde
+      //digitalWrite(ledrojo, LOW);    //se apaga el led rojo que indica advertencia
       
-      estadoanterior=0;   //ponemos el estado anterior en 0
+      estadoanterior = 0;   //ponemos el estado anterior en 0
+      
+    }
+
+    if (intentos<3){   //si los intentos estan en 0...
+
+      digitalWrite(ledverde, LOW);    //se apaga el led verde
+      digitalWrite(ledrojo, HIGH);    //se enciende el led rojo que indica advertencia
+      digitalWrite(buzzer, HIGH);   //Se enciende el buzzer
+      
+      if(estadoanterior>=1 and intentos<=0){    //si el estado anterior es >=1 y los intentos son = a 0
+
+      keypad.getKey();    //si no pones esto no te anda el teclado      
+      
+    }
     
-    }
+  }
 
-    if (intentos==0){   //si los intentos estan en 0...
-
-          digitalWrite(ledverde, LOW);    //se apaga el led verde
-          digitalWrite(ledrojo, HIGH);    //se enciende el led rojo que indica advertencia
-      
-    }
-
-    if(estadoanterior>=1 and intentos==0){    //si el estado anterior es >=1 y los intentos son = a 0
- 
-      intentos=3;   //renovamos los intentos
+  if (intentos<=0){
+    delay(100000);    //Tiempo para que no se pueda acceder ninguna clave
+  }
   
-    }
-
-
+/*
     while(intentos<3){    //mientras los intentos sean menor a 3...
 
       digitalWrite(ledverde, LOW);    //se apaga el led verde
       digitalWrite(ledrojo, HIGH);    //se enciende el led rojo que indica advertencia
       
-      keypad.getKey();    //si no pones esto no te anda el teclado 
+      keypad.getKey();    //si no pones esto no te anda el teclado
+      LeoTarjeta();  //llamo a la funcion para que compare mis tarjetas
+      
 
     }
+*/
 
-  
+
 
 }   //final void loop
 //-------------------HASTA ACA ESTA TODO ACOMODADO------------------------------------
@@ -261,10 +271,10 @@ void loop() {
 //----------------------------------------------------------------------FUNCIONES EXTRA
 void keypadEvent(KeypadEvent eKey)
 {
-  
+
   switch (keypad.getState())
   {
-    
+
     case PRESSED:
 
     //   ESTO SIRVE PARA UN SPEAKER
@@ -273,7 +283,7 @@ void keypadEvent(KeypadEvent eKey)
     for( inicio = 1; inicio <= 1; inicio++ )
 
     {
-      
+
       digitalWrite(buzzer, HIGH);  
       delay(200);            
       digitalWrite(buzzer, LOW);  
@@ -284,11 +294,11 @@ void keypadEvent(KeypadEvent eKey)
     
     Serial.print("Presionado: ");
     Serial.println(eKey);
- 
+    
     switch (eKey)
     
     {
-      
+
       /*
       case '#':
       break;
@@ -296,7 +306,7 @@ void keypadEvent(KeypadEvent eKey)
       case '*':
       break;
       */
-       
+
       default:
       clicks=clicks+1;
       password.append(eKey);
@@ -307,102 +317,97 @@ void keypadEvent(KeypadEvent eKey)
     
     if(clicks == 1)
     {
-      
+
       lcd.clear();
       lcd.setCursor(1,0);
       lcd.print("   < PIN >");
       lcd.setCursor(0,1);
       lcd.print("*_");
-    
+      
     }
     if(clicks == 2)
     {
-      
+
       lcd.clear();
       lcd.setCursor(1,0);
       lcd.print("   < PIN >");
       lcd.setCursor(0,1);
       lcd.print("**_");
-    
+      
     }//---------------------------------------HASTA ACA ESTA TODO ACOMODADO.---------------------
     if(clicks == 3)
     {
-    lcd.clear();
-    lcd.setCursor(1,0);
-    lcd.print("   < PIN >");
-    lcd.setCursor(0,1);
-    lcd.print("***_");
+      lcd.clear();
+      lcd.setCursor(1,0);
+      lcd.print("   < PIN >");
+      lcd.setCursor(0,1);
+      lcd.print("***_");
     }
     if(clicks == 4)
     {
-    lcd.clear();
-    lcd.setCursor(1,0);
-    lcd.print("   < PIN >");
-    lcd.setCursor(0,1);
-    lcd.print("****_");
+      lcd.clear();
+      lcd.setCursor(1,0);
+      lcd.print("   < PIN >");
+      lcd.setCursor(0,1);
+      lcd.print("****_");
     }
     if(clicks == 5)
     {
-    lcd.clear();
-    lcd.setCursor(1,0);
-    lcd.print("   < PIN >");
-    lcd.setCursor(0,1);
-    lcd.print("*****_");
+      lcd.clear();
+      lcd.setCursor(1,0);
+      lcd.print("   < PIN >");
+      lcd.setCursor(0,1);
+      lcd.print("*****_");
     }
     if(clicks == 6)
     {
-    lcd.clear();
-    lcd.setCursor(1,0);
-    lcd.print("   < PIN >");
-    lcd.setCursor(0,1);
-    lcd.print("******_");
+      lcd.clear();
+      lcd.setCursor(1,0);
+      lcd.print("   < PIN >");
+      lcd.setCursor(0,1);
+      lcd.print("******_");
     }
     if(clicks == 7)
     {
-    lcd.clear();
-    lcd.setCursor(1,0);
-    lcd.print("   < PIN >");
-    lcd.setCursor(0,1);
-    lcd.print("*******_");
+      lcd.clear();
+      lcd.setCursor(1,0);
+      lcd.print("   < PIN >");
+      lcd.setCursor(0,1);
+      lcd.print("*******_");
     }
     if(clicks == 8)
     {
-    lcd.clear();
-    lcd.setCursor(1,0);
-    lcd.print("   < PIN >");
-    lcd.setCursor(0,1);
-    lcd.print("********");
+      lcd.clear();
+      lcd.setCursor(1,0);
+      lcd.print("   < PIN >");
+      lcd.setCursor(0,1);
+      lcd.print("********");
     }
-     
+    
     if(clicks == largocontrasena)
     {
-    delay(250);
-    checkPassword();
-    clicks = 0;
+      delay(250);
+      checkPassword();
+      clicks = 0;
     }
   }
 }
- 
+
 void checkPassword()
 {
   if (password.evaluate())
   {
-int inicio;
-for( inicio = 1; inicio <= 3; inicio++ )
-{
-  digitalWrite(buzzer, HIGH);  
-  delay(120);            
-  digitalWrite(buzzer, LOW);  
-  delay(70);      
-}    
+    TodoOk();   //hace sonar el buzzer, renueva los intentos y pone el estado anterior en 1
+    LedOk();    //aoaga el led rojo y prende el verde
+    
     clicks = 0;
     password.reset();
     
     Serial.println("Correcto");    
- 
+    
     //digitalWrite(ledrojo, HIGH);
     //digitalWrite(ledverde, LOW);
- 
+    
     lcd.clear();
     lcd.setCursor(0,1);
     lcd.print("<<PIN CORRECTO>>");
@@ -411,22 +416,19 @@ for( inicio = 1; inicio <= 3; inicio++ )
     lcd.print("     Alarma");
     lcd.setCursor(0,1);
     lcd.print("    Activada"); 
- 
-     estadoanterior=estadoanterior+1;
-
-
+    
     if(estadoanterior>1){ //si ingresan devuelta la contraseña
 
-       lcd.clear();
-       lcd.print("  *Bienvenido*");
-       
-       digitalWrite(ledrojo, LOW);
-       digitalWrite(ledverde, HIGH);
-       
-       
-      }
+     lcd.clear();
+     lcd.print("  *Bienvenido*");
+     
+     //digitalWrite(ledrojo, LOW);
+     //digitalWrite(ledverde, HIGH);
+     
+     
+   }
 
-    
+   
 /* 
     delay(2000);
     digitalWrite(ledGreen, LOW);
@@ -439,59 +441,175 @@ for( inicio = 1; inicio <= 3; inicio++ )
     lcd.print("FAVOR ENTRE PIN");   
  */
 
- 
-  }  
-  else  
-  {
-int inicio;
-for( inicio = 1; inicio <= 1; inicio++ )
-{
-  
-
-  digitalWrite(buzzer, HIGH);  
-  delay(300);            
-  digitalWrite(buzzer, LOW);  
-  delay(100);
-
-
-        
-}  
+   
+ }  
+ else  
+ {
+  BuzzerX();    //hace sonar el buzzer de manera negativa
+  LedX();   //apaga el led verde y enciende el rojo
    // ilosc = 0;  
-    password.reset();
- 
-    Serial.println("Error");
- 
-    digitalWrite(ledverde, LOW);
-    digitalWrite(ledrojo, HIGH);    
-             
-    lcd.clear();
-    lcd.setCursor(0,1);
-    lcd.print("<<PIN ERRONEO>>");
-    delay(2000);
-    
-    intentos=intentos-1;
-    
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("    *Error*");
-    lcd.setCursor(0,1);
-    lcd.print("  Intentos: ");
-    lcd.print(intentos);
+  password.reset();
+  
+  Serial.println("Error");    
+  
+  lcd.clear();
+  lcd.setCursor(0,1);
+  lcd.print("<<PIN ERRONEO>>");
+  delay(2000);
 
-    digitalWrite(buzzer, HIGH);
+  Error();    //resta los intentos y muestra por pantalla que esta pasando
+
+}
+}
 
 
-      if(intentos==0){
+void LeoTarjeta() {
+
+ if ( mfrc522.PICC_IsNewCardPresent())    // Revisamos si hay nuevas tarjetas  presentes
+ {  
+
+      //Seleccionamos una tarjeta
+  if ( mfrc522.PICC_ReadCardSerial()) 
+  {
+    // Enviamos serialemente su UID
+    for (byte i = 0; i < mfrc522.uid.size; i++) { 
+      ActualUID[i]=mfrc522.uid.uidByte[i];          
+    } 
+     //comparamos los UID para determinar si es uno de nuestros usuarios  
+    if(compareArray(ActualUID,Alumno)){
+      
+      LedOk();    //aoaga el led rojo y prende el verde
+      TodoOk();   //hace sonar el buzzer, renueva los intentos y pone el estado anterior en 1
+      
+      if(estadoanterior>1){ //si ingresan devuelta la contraseña
+
+        lcd.clear();
+        Serial.println("Bienvenido");
+        lcd.print("  *Bienvenido*");
+
         
-          lcd.clear();
-          lcd.setCursor(0,0);
-          lcd.print("    *Alerta*");
-          //digitalWrite(buzzer, HIGH);  
+      }else{
+        Serial.println("Alarma Activada");
+        lcd.clear();
+        lcd.setCursor(0,1);
+        lcd.print("<<TARGETA CORRECTO>>");
+        delay(1000);
+        lcd.clear();
+        lcd.print("     Alarma");
+        lcd.setCursor(0,1);
+        lcd.print("    Activada"); 
+      }
 
-        
-        }
+    }
+    else if(compareArray(ActualUID,Docente)){
+      
+      LedOk();    //aoaga el led rojo y prende el verde
+      TodoOk();   //hace sonar el buzzer, renueva los intentos y pone el estado anterior en 1
+      
+      if(estadoanterior>1){ //si ingresan devuelta la contraseña
 
+        lcd.clear();
+        Serial.println("Bienvenido");
+        lcd.print("  *Bienvenido*");
+      }else{
+        Serial.println("Alarma Activada");
+        lcd.clear();
+        lcd.setCursor(0,1);
+        lcd.print("<<TARGETA CORRECTO>>");
+        delay(1000);
+        lcd.clear();
+        lcd.print("     Alarma");
+        lcd.setCursor(0,1);
+        lcd.print("    Activada"); 
+      }
+    }
+    else{
+      
+      Serial.println("Acceso denegado...");
+      LedX();   //apaga el led verde y enciende el rojo
+      BuzzerX();    //hace sonar el buzzer de manera negativa
+      Error();    //resta los intentos y muestra por pantalla que esta pasando
+    }
+
+                  // Terminamos la lectura de la tarjeta tarjeta  actual
+    mfrc522.PICC_HaltA();
 
   }
+
+}
+
+}
+
+
+
+//Función para comparar dos vectores
+boolean compareArray(byte array1[],byte array2[]){
+
+  if(array1[0] != array2[0])return(false);
+  if(array1[1] != array2[1])return(false);
+  if(array1[2] != array2[2])return(false);
+  if(array1[3] != array2[3])return(false);
+  return(true);
+
+}
+
+void TodoOk(){
+  int inicio;
+  for( inicio = 1; inicio <= 3; inicio++ )
+  {
+    digitalWrite(buzzer, HIGH);  
+    delay(120);            
+    digitalWrite(buzzer, LOW);  
+    delay(70);      
+  }
+  
+  intentos = 3;   //Renuevo los intentos intentos
+  estadoanterior = estadoanterior + 1;    //ponemos el estado anterior en 1
+  
+}
+
+void BuzzerX(){
+  int inicio;
+  for( inicio = 1; inicio <= 1; inicio++ )
+  {
+
+    digitalWrite(buzzer, HIGH);  
+    delay(300);            
+    digitalWrite(buzzer, LOW);  
+    delay(100);
+    
+  }
+}
+
+void Error(){
+  
+  intentos=intentos-1;
+  
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("    *Error*");
+  lcd.setCursor(0,1);
+  lcd.print("  Intentos: ");
+  Serial.println(intentos);
+  lcd.print(intentos);
+
+  digitalWrite(buzzer, HIGH);
+
+  if(intentos==0){
+
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("    *Alerta*");
+    
+  }
+}
+
+void LedOk(){
+  digitalWrite(ledrojo, LOW);
+  digitalWrite(ledverde, HIGH);
+}
+void LedX(){
+  digitalWrite(ledverde, LOW);
+  digitalWrite(ledrojo, HIGH);
 }
 

@@ -66,7 +66,7 @@ void setup() {
 
 
   // -inicializamos el sensor como una entrada:
-pinMode(sensor, INPUT);
+  pinMode(sensor, INPUT);
 
   
 
@@ -87,11 +87,11 @@ pinMode(sensor, INPUT);
 
 
 
-    lcd.clear();
+  lcd.clear();
 
 
   
-    
+  
  // Interruptor D3 Interrupcion 1
   /*
   digitalWrite(6, HIGH);
@@ -123,81 +123,81 @@ pinMode(sensor, INPUT);
 
 
 
-    Serial.println("Espere, se estan calibrando los sensores....");
+  Serial.println("Espere, se estan calibrando los sensores....");
 
 // mensaje en display
 
-              lcd.setCursor(1, 0);
+  lcd.setCursor(1, 0);
 
                             // Print a message to the LCD.
-              lcd.print(" Calibrando.. ");
-    
+  lcd.print(" Calibrando.. ");
+  
 // mensaje en display
 
 
            // (note: line 1 is the second row, since counting begins with 0):
-        lcd.setCursor(9, 0);
+  lcd.setCursor(9, 0);
 
 
-      for(int i = 0; i <= ct; i++){
-        Serial.print(((i*100)/ct));      
-        Serial.print("% ");
-        Serial.println("COMPLETADO.....");
-        delay(1000);
-        }
-        
-                    lcd.clear();
+  for(int i = 0; i <= ct; i++){
+    Serial.print(((i*100)/ct));      
+    Serial.print("% ");
+    Serial.println("COMPLETADO.....");
+    delay(1000);
+  }
+  
+  lcd.clear();
 
 
 
       //lcd.print(" Calibracion completada ");
-      lcd.print("        Alarma Activada ");
-      Serial.println("** SENSORES ACTIVOS **");
+  lcd.print("        Alarma Activada ");
+  Serial.println("** SENSORES ACTIVOS **");
 
       //lcd.println("** SENSOR ACTIVO **");
 
-      
+  
 
                   // scroll 16 positions (string length) to the left
     // to move it offscreen left:
-    for (int positionCounter = 0; positionCounter < 16; positionCounter++) {
+  for (int positionCounter = 0; positionCounter < 16; positionCounter++) {
       // scroll one position left:
-      lcd.scrollDisplayLeft();
+    lcd.scrollDisplayLeft();
       // wait a bit:
-      delay(500);
-        }
+    delay(500);
+  }
 
 
-                    lcd.clear();
+  lcd.clear();
 
-      
-      delay(50);
+  
+  delay(50);
 
 
 
 
   
-      
+  
 }
 
 void loop() {
 
-        digitalWrite(ledrojo, LOW);
+  digitalWrite(ledrojo, LOW);
 
 
 
  // Lee el estado del sensor de apertura:
-Estadodesensor = digitalRead(sensor);
+  Estadodesensor = digitalRead(sensor);
 
 
   /* delay (1000);*/
   
   // put your main code here, to run repeatedly:
-    valor=digitalRead(piro);
+  valor=digitalRead(piro);
 
   if (valor==HIGH or Estadodesensor == HIGH){
-  
-  
+    
+    
   // Sirena!!!!!!!!!!!!!!!!!!
 
 
@@ -205,90 +205,90 @@ Estadodesensor = digitalRead(sensor);
 
 
 
-          digitalWrite(sirenaPin, HIGH);
+    digitalWrite(sirenaPin, HIGH);
 
 
 
 
 
 
-  
-                  
+    
+    
          // (note: line 1 is the second row, since counting begins with 0):
-        lcd.setCursor(9, 0);
-  
-  
+    lcd.setCursor(9, 0);
+    
+    
    /* 
       digitalWrite(ledverde, LOW);
       digitalWrite(ledrojo, HIGH);
 
       */
-  
+    
       // Sensor de apertura y PIR
-          if (Estadodesensor == HIGH)
-        {
+    if (Estadodesensor == HIGH)
+    {
 
 
-        digitalWrite(ledverde, LOW);
+      digitalWrite(ledverde, LOW);
       digitalWrite(ledrojo, HIGH);
-  
-  
-    
-          Serial.println(" fue activado el sensor de apertura "); 
-  
-  
+      
+      
+      
+      Serial.println(" fue activado el sensor de apertura "); 
+      
+      
           //PROBANDO MOVER TEXTO
-  
-    
-  
+      
+      
+      
                     // Print a message to the LCD.
-          lcd.print(" Se abrio la puerta ");
-  
-  
-  
+      lcd.print(" Se abrio la puerta ");
+      
+      
+      
             // scroll 16 positions (string length) to the left
     // to move it offscreen left:
-    for (int positionCounter = 0; positionCounter < 16; positionCounter++) {
+      for (int positionCounter = 0; positionCounter < 16; positionCounter++) {
       // scroll one position left:
-      lcd.scrollDisplayLeft();
+        lcd.scrollDisplayLeft();
       // wait a bit:
-      delay(300);
-        }
-  
-  
-        
-        }
-        else
-        
-        {
-                        if( valor == HIGH ){
+        delay(300);
+      }
+      
+      
+      
+    }
+    else
+      
+    {
+      if( valor == HIGH ){
 
-                                  digitalWrite(ledverde, LOW);
-                                  digitalWrite(ledrojo, HIGH);
-          
-            
-                        Serial.println("Se activo el sensor PIR ");
-                
-                
-                
+        digitalWrite(ledverde, LOW);
+        digitalWrite(ledrojo, HIGH);
+        
+        
+        Serial.println("Se activo el sensor PIR ");
+        
+        
+        
                         //   LCD!!!!!!!
-                
+        
                                   // Print a message to the LCD.
-                        lcd.print("Se activo el sensor PIR ");
-                
-                
-                
+        lcd.print("Se activo el sensor PIR ");
+        
+        
+        
                           // scroll 16 positions (string length) to the left
                   // to move it offscreen left:
-                  for (int positionCounter = 0; positionCounter < 16; positionCounter++) {
+        for (int positionCounter = 0; positionCounter < 16; positionCounter++) {
                     // scroll one position left:
-                    lcd.scrollDisplayLeft();
+          lcd.scrollDisplayLeft();
                     // wait a bit:
-                    delay(400);
-                      }            
-            
-                    
-                    }
+          delay(400);
+        }            
+        
+        
+      }
 /*    
       Serial.println("** MOVIMIENTO DETECTADO **");
       delay(1000);
@@ -297,13 +297,13 @@ Estadodesensor = digitalRead(sensor);
 
 
 
-        }
-  
-
-
-  
     }
     
+
+
+    
+  }
+  
 /*else{
     
       lcd.clear(); 
@@ -315,13 +315,13 @@ Estadodesensor = digitalRead(sensor);
       
     }
     */
-              lcd.clear();
+  lcd.clear();
 
-        digitalWrite(sirenaPin, LOW);
+  digitalWrite(sirenaPin, LOW);
 
 
-      digitalWrite(ledrojo, LOW);
-      digitalWrite(ledverde, HIGH);
+  digitalWrite(ledrojo, LOW);
+  digitalWrite(ledverde, HIGH);
 
 
 
